@@ -1,0 +1,16 @@
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+sync-debug.log
+
+# Local development
+.local.md
+*.zip

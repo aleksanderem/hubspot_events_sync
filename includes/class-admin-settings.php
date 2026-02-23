@@ -46,7 +46,7 @@ class HSEC_Admin_Settings {
      * Add menu pages
      */
     public function add_menu_pages() {
-        // Add settings page under Settings menu
+        // Add full settings page under Settings menu for advanced configuration
         add_options_page(
             __('HubSpot Events Settings', 'hubspot-events-connector'),
             __('HubSpot Events', 'hubspot-events-connector'),
@@ -55,24 +55,24 @@ class HSEC_Admin_Settings {
             [$this, 'render_settings_page']
         );
 
-        // Also add submenu under our CPT menu
+        // Add quick link submenu under CPT menu that redirects to Starter Dashboard addon settings
         add_submenu_page(
             'edit.php?post_type=hs_event',
-            __('Settings', 'hubspot-events-connector'),
-            __('Settings', 'hubspot-events-connector'),
+            __('Quick Settings', 'hubspot-events-connector'),
+            __('⚙️ Quick Settings', 'hubspot-events-connector'),
             'manage_options',
-            self::PAGE_SLUG,
-            [$this, 'render_settings_page']
+            'admin.php?page=starter-dashboard&addon=hubspot-events',
+            ''
         );
 
-        // Add Sync Status submenu
+        // Advanced settings link
         add_submenu_page(
             'edit.php?post_type=hs_event',
-            __('Sync Status', 'hubspot-events-connector'),
-            __('Sync Status', 'hubspot-events-connector'),
+            __('Advanced Settings', 'hubspot-events-connector'),
+            __('⚙️ Advanced Settings', 'hubspot-events-connector'),
             'manage_options',
-            'hsec-sync-status',
-            [$this, 'render_sync_status_page']
+            'options-general.php?page=hsec-settings',
+            ''
         );
     }
 

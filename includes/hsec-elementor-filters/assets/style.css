@@ -1,0 +1,358 @@
+/**
+ * HubSpot Events Elementor Filters - Styles
+ */
+
+/* ============================================
+   Language Filter
+   ============================================ */
+
+.hsec-lang-filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.hsec-lang-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: inherit;
+    transition: all 0.2s ease;
+}
+
+.hsec-lang-btn:hover {
+    border-color: #999;
+    background: #f5f5f5;
+}
+
+.hsec-lang-btn.active {
+    border-color: #0073aa;
+    background: #0073aa;
+    color: #fff;
+}
+
+.hsec-lang-btn .hsec-flag {
+    font-size: 1.2em;
+    line-height: 1;
+}
+
+.hsec-lang-btn .hsec-lang-label {
+    font-weight: 500;
+}
+
+.hsec-lang-select {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: inherit;
+    min-width: 180px;
+    cursor: pointer;
+    background: #fff;
+}
+
+.hsec-lang-select:focus {
+    outline: none;
+    border-color: #0073aa;
+}
+
+
+/* ============================================
+   Date Filter
+   ============================================ */
+
+.hsec-date-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.hsec-date-select {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: inherit;
+    min-width: 200px;
+    cursor: pointer;
+    background: #fff;
+}
+
+.hsec-date-select:focus {
+    outline: none;
+    border-color: #0073aa;
+}
+
+.hsec-month-picker-wrapper {
+    padding-top: 10px;
+}
+
+.hsec-month-picker-label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 500;
+    color: #333;
+}
+
+.hsec-month-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.hsec-year-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hsec-year-label {
+    font-weight: 600;
+    font-size: 0.9em;
+    color: #666;
+    padding-left: 2px;
+}
+
+.hsec-months-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.hsec-month-btn {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+    min-width: 50px;
+    text-align: center;
+}
+
+.hsec-month-btn:hover:not(:disabled) {
+    border-color: #0073aa;
+    background: #f0f7fc;
+}
+
+.hsec-month-btn.active {
+    border-color: #0073aa;
+    background: #0073aa;
+    color: #fff;
+}
+
+.hsec-month-btn.no-events,
+.hsec-month-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f5f5f5;
+}
+
+
+/* ============================================
+   On-Demand Toggle
+   ============================================ */
+
+.hsec-ondemand-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hsec-ondemand-toggle.hsec-label-before {
+    flex-direction: row;
+}
+
+.hsec-ondemand-toggle.hsec-label-after {
+    flex-direction: row;
+}
+
+.hsec-ondemand-label {
+    font-size: inherit;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Switch styles */
+.hsec-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.hsec-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.hsec-switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 26px;
+}
+
+.hsec-switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.hsec-switch input:checked + .hsec-switch-slider {
+    background-color: #2196F3;
+}
+
+.hsec-switch input:focus + .hsec-switch-slider {
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
+}
+
+.hsec-switch input:checked + .hsec-switch-slider:before {
+    transform: translateX(24px);
+}
+
+
+/* ============================================
+   Empty State
+   ============================================ */
+
+.hsec-filter-empty {
+    padding: 20px;
+    background: #f5f5f5;
+    border: 1px dashed #ddd;
+    border-radius: 4px;
+    color: #666;
+    text-align: center;
+    font-style: italic;
+}
+
+
+/* ============================================
+   Loading State
+   ============================================ */
+
+.hsec-filter-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.hsec-filter-loading > * {
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+}
+
+.hsec-filter-loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.5);
+    z-index: 10;
+}
+
+.hsec-filter-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border: 3px solid #e0e0e0;
+    border-top-color: #0073aa;
+    border-radius: 50%;
+    animation: hsec-spin 0.8s linear infinite;
+    z-index: 11;
+}
+
+@keyframes hsec-spin {
+    to { transform: rotate(360deg); }
+}
+
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 767px) {
+    .hsec-lang-filter-buttons {
+        gap: 8px;
+    }
+
+    .hsec-lang-btn {
+        padding: 6px 12px;
+    }
+
+    .hsec-month-btn {
+        padding: 5px 10px;
+        min-width: 45px;
+        font-size: 0.85em;
+    }
+
+    .hsec-lang-select,
+    .hsec-date-select {
+        width: 100%;
+    }
+}
+
+
+/* ============================================
+   Editor Preview Styles
+   ============================================ */
+
+.hsec-editor-preview {
+    position: relative;
+}
+
+.hsec-editor-preview::before {
+    content: 'Preview';
+    position: absolute;
+    top: -18px;
+    right: 0;
+    font-size: 10px;
+    color: #93003c;
+    background: #ffe5f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Ensure widgets are visible in editor */
+.elementor-editor-active .hsec-lang-filter,
+.elementor-editor-active .hsec-date-filter,
+.elementor-editor-active .hsec-ondemand-toggle {
+    min-height: 40px;
+}
+
+/* Interactive elements in editor - prevent actual filtering */
+.elementor-editor-active .hsec-lang-btn,
+.elementor-editor-active .hsec-month-btn,
+.elementor-editor-active .hsec-lang-select,
+.elementor-editor-active .hsec-date-select,
+.elementor-editor-active .hsec-ondemand-checkbox {
+    pointer-events: auto;
+    cursor: pointer;
+}

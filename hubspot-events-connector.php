@@ -3,29 +3,18 @@
  * Plugin Name: HubSpot Events Connector
  * Plugin URI: https://mwt.pl
  * Description: Synchronizes marketing events from HubSpot to WordPress as a custom post type with automatic field mapping and incremental updates.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Alex M.
  * Author URI: https://mwt.pl
  * Text Domain: hubspot-events-connector
  * Domain Path: /languages
  * Requires at least: 6.0
  * Requires PHP: 7.4
- * Requires Plugins: starter-dashboard
  */
 
 defined('ABSPATH') || exit;
 
-// Check if Starter Dashboard is active
-if (!function_exists('starter_addon_loader')) {
-    add_action('admin_notices', function() {
-        echo '<div class="notice notice-error"><p>';
-        echo __('HubSpot Events Connector requires Starter Dashboard plugin to be installed and activated.', 'hubspot-events-connector');
-        echo '</p></div>';
-    });
-    return;
-}
-
-define('HSEC_VERSION', '1.0.1');
+define('HSEC_VERSION', '1.0.2');
 define('HSEC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('HSEC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HSEC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -719,53 +708,6 @@ class HubSpot_Events_Connector {
 // Activation/deactivation hooks
 register_activation_hook(__FILE__, ['HubSpot_Events_Connector', 'activate']);
 register_deactivation_hook(__FILE__, ['HubSpot_Events_Connector', 'deactivate']);
-
-// Register as Starter Dashboard external addon
-add_filter('starter_register_external_addons', function($addons) {
-    $addons['hubspot-events'] = [
-        'name' => __('HubSpot Events Connector', 'hubspot-events-connector'),
-        'description' => __('Synchronizes marketing events from HubSpot to WordPress as custom posts with automatic field mapping.', 'hubspot-events-connector'),
-        'icon' => 'calendar',
-        'category' => 'integration',
-        'file' => __FILE__,
-        'has_settings' => true,
-        'settings_callback' => 'HSEC_Addon_Settings::render_settings',
-        'version' => HSEC_VERSION,
-        'plugin_file' => __FILE__,
-        'external' => true,
-    ];
-    return $addons;
-});
-
-// Handle addon settings save
-add_filter('starter_addon_save_settings_hubspot-events', function($saved, $settings) {
-    // Save API token
-    if (isset($settings['api_token'])) {
-        update_option('hsec_api_token', sanitize_text_field($settings['api_token']));
-    }
-
-    // Save sync interval
-    if (isset($settings['sync_interval'])) {
-        $interval = sanitize_text_field($settings['sync_interval']);
-        $old_interval = get_option('hsec_sync_interval', 'hourly');
-
-        update_option('hsec_sync_interval', $interval);
-
-        // If interval changed, reschedule cron
-        if ($interval !== $old_interval) {
-            $timestamp = wp_next_scheduled('hsec_cron_sync');
-            if ($timestamp) {
-                wp_unschedule_event($timestamp, 'hsec_cron_sync');
-            }
-            wp_schedule_event(time(), $interval, 'hsec_cron_sync');
-        }
-    }
-
-    return true;
-}, 10, 2);
-
-// Load addon settings integration
-require_once HSEC_PLUGIN_DIR . 'includes/class-addon-settings.php';
 
 // Initialize plugin
 HubSpot_Events_Connector::instance();

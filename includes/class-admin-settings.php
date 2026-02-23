@@ -55,21 +55,11 @@ class HSEC_Admin_Settings {
             [$this, 'render_settings_page']
         );
 
-        // Add quick link submenu under CPT menu that redirects to Starter Dashboard addon settings
+        // Settings link under CPT menu
         add_submenu_page(
             'edit.php?post_type=hs_event',
-            __('Quick Settings', 'hubspot-events-connector'),
-            __('⚙️ Quick Settings', 'hubspot-events-connector'),
-            'manage_options',
-            'admin.php?page=starter-dashboard&addon=hubspot-events',
-            ''
-        );
-
-        // Advanced settings link
-        add_submenu_page(
-            'edit.php?post_type=hs_event',
-            __('Advanced Settings', 'hubspot-events-connector'),
-            __('⚙️ Advanced Settings', 'hubspot-events-connector'),
+            __('Settings', 'hubspot-events-connector'),
+            __('⚙️ Settings', 'hubspot-events-connector'),
             'manage_options',
             'options-general.php?page=hsec-settings',
             ''

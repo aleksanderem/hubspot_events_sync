@@ -16,7 +16,8 @@
                 language: 'hsec_lang',
                 dateFilter: 'hsec_date_filter',
                 dateMonth: 'hsec_month',
-                ondemand: 'hsec_ondemand'
+                ondemand: 'hsec_ondemand',
+                category: 'hsec_category'
             };
 
             // Find Loop Grid widget
@@ -88,7 +89,8 @@
                 language: params.get(this.queryVars.language) || defaultLang,
                 dateFilter: params.get(this.queryVars.dateFilter) || '',
                 dateMonth: params.get(this.queryVars.dateMonth) || '',
-                ondemand: params.get(this.queryVars.ondemand) || ''
+                ondemand: params.get(this.queryVars.ondemand) || '',
+                category: params.get(this.queryVars.category) || ''
             };
 
             // If no URL param but we have default, apply filter on first load
@@ -152,6 +154,26 @@
 
                 self.currentFilters.dateFilter = 'month';
                 self.currentFilters.dateMonth = month;
+                self.applyFilters();
+            });
+
+            // Category filter - buttons
+            $(document).on('click', '.hsec-category-btn', function(e) {
+                e.preventDefault();
+                var $btn = $(this);
+                var cat = $btn.data('category');
+
+                $btn.closest('.hsec-category-filter-buttons').find('.hsec-category-btn').removeClass('active');
+                $btn.addClass('active');
+
+                self.currentFilters.category = (cat === 'all') ? '' : cat;
+                self.applyFilters();
+            });
+
+            // Category filter - dropdown
+            $(document).on('change', '.hsec-category-select', function(e) {
+                var cat = $(this).val();
+                self.currentFilters.category = (cat === 'all') ? '' : cat;
                 self.applyFilters();
             });
 
@@ -221,6 +243,12 @@
                 params.delete(this.queryVars.ondemand);
             }
 
+            if (this.currentFilters.category) {
+                params.set(this.queryVars.category, this.currentFilters.category);
+            } else {
+                params.delete(this.queryVars.category);
+            }
+
             // Reset pagination
             params.delete('paged');
             params.delete('page');
@@ -252,6 +280,7 @@
             postData[this.queryVars.dateFilter] = this.currentFilters.dateFilter;
             postData[this.queryVars.dateMonth] = this.currentFilters.dateMonth;
             postData[this.queryVars.ondemand] = this.currentFilters.ondemand;
+            postData[this.queryVars.category] = this.currentFilters.category;
 
             console.log('HSEC Filters: Sending AJAX', postData);
 
@@ -312,7 +341,8 @@
                 language: '',
                 dateFilter: '',
                 dateMonth: '',
-                ondemand: ''
+                ondemand: '',
+                category: ''
             };
             this.applyFilters();
         }

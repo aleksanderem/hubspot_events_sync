@@ -18,6 +18,7 @@ class HSEC_Elementor_Filters {
     const QUERY_VAR_DATE_FILTER = 'hsec_date_filter';
     const QUERY_VAR_DATE_MONTH = 'hsec_month';
     const QUERY_VAR_ONDEMAND = 'hsec_ondemand';
+    const QUERY_VAR_CATEGORY = 'hsec_category';
 
     /**
      * Get singleton instance
@@ -109,6 +110,7 @@ class HSEC_Elementor_Filters {
         $vars[] = self::QUERY_VAR_DATE_FILTER;
         $vars[] = self::QUERY_VAR_DATE_MONTH;
         $vars[] = self::QUERY_VAR_ONDEMAND;
+        $vars[] = self::QUERY_VAR_CATEGORY;
         return $vars;
     }
 
@@ -132,10 +134,12 @@ class HSEC_Elementor_Filters {
         require_once HSEC_PLUGIN_DIR . 'includes/hsec-elementor-filters/widget-language-filter.php';
         require_once HSEC_PLUGIN_DIR . 'includes/hsec-elementor-filters/widget-date-filter.php';
         require_once HSEC_PLUGIN_DIR . 'includes/hsec-elementor-filters/widget-ondemand-toggle.php';
+        require_once HSEC_PLUGIN_DIR . 'includes/hsec-elementor-filters/widget-category-filter.php';
 
         $widgets_manager->register(new HSEC_Language_Filter_Widget());
         $widgets_manager->register(new HSEC_Date_Filter_Widget());
         $widgets_manager->register(new HSEC_OnDemand_Toggle_Widget());
+        $widgets_manager->register(new HSEC_Category_Filter_Widget());
     }
 
     /**
@@ -169,6 +173,7 @@ class HSEC_Elementor_Filters {
                 'dateFilter' => self::QUERY_VAR_DATE_FILTER,
                 'dateMonth' => self::QUERY_VAR_DATE_MONTH,
                 'ondemand' => self::QUERY_VAR_ONDEMAND,
+                'category' => self::QUERY_VAR_CATEGORY,
             ],
         ]);
     }
@@ -295,23 +300,26 @@ class HSEC_Elementor_Filters {
             ];
         }
 
+        // Category filter
+        $category = $this->get_filter_value(self::QUERY_VAR_CATEGORY);
+        if ($category && $category !== 'all') {
+            $meta_query[] = [
+                'key' => '_hsec_hh_event_category',
+                'value' => sanitize_text_field($category),
+                'compare' => '=',
+            ];
+        }
+
         // Date filter
         $date_filter = $this->get_filter_value(self::QUERY_VAR_DATE_FILTER);
         $show_ondemand = $this->get_filter_value(self::QUERY_VAR_ONDEMAND);
         $include_ondemand = ($show_ondemand === '1' || $show_ondemand === 'yes');
 
-        // On-demand condition (events without date)
+        // On-demand condition (explicit meta field from headHtml)
         $ondemand_condition = [
-            'relation' => 'OR',
-            [
-                'key' => '_hsec_start_datetime',
-                'compare' => 'NOT EXISTS',
-            ],
-            [
-                'key' => '_hsec_start_datetime',
-                'value' => '',
-                'compare' => '=',
-            ],
+            'key' => '_hsec_hh_is_on_demand',
+            'value' => '1',
+            'compare' => '=',
         ];
 
         if ($date_filter === 'past') {
@@ -410,11 +418,18 @@ class HSEC_Elementor_Filters {
                 // Show only on-demand events
                 $meta_query[] = $ondemand_condition;
             } elseif ($show_ondemand === '0' || $show_ondemand === 'no') {
-                // Exclude on-demand (only events with dates)
+                // Exclude on-demand events
                 $meta_query[] = [
-                    'key' => '_hsec_start_datetime',
-                    'value' => '',
-                    'compare' => '!=',
+                    'relation' => 'OR',
+                    [
+                        'key' => '_hsec_hh_is_on_demand',
+                        'value' => '0',
+                        'compare' => '=',
+                    ],
+                    [
+                        'key' => '_hsec_hh_is_on_demand',
+                        'compare' => 'NOT EXISTS',
+                    ],
                 ];
             }
         }
@@ -634,6 +649,7 @@ class HSEC_Elementor_Filters {
         $_GET[self::QUERY_VAR_DATE_FILTER] = sanitize_text_field($_POST[self::QUERY_VAR_DATE_FILTER] ?? '');
         $_GET[self::QUERY_VAR_DATE_MONTH] = sanitize_text_field($_POST[self::QUERY_VAR_DATE_MONTH] ?? '');
         $_GET[self::QUERY_VAR_ONDEMAND] = sanitize_text_field($_POST[self::QUERY_VAR_ONDEMAND] ?? '');
+        $_GET[self::QUERY_VAR_CATEGORY] = sanitize_text_field($_POST[self::QUERY_VAR_CATEGORY] ?? '');
 
         // Get the document
         $document = \Elementor\Plugin::$instance->documents->get($post_id);
@@ -810,5 +826,25 @@ class HSEC_Elementor_Filters {
         $code = strtolower($code);
 
         return $languages[$code] ?? ['flag' => '🏳️', 'name' => strtoupper($code), 'full' => $code];
+    }
+
+    /**
+     * Get available event categories from headHtml meta
+     */
+    public static function get_available_categories() {
+        global $wpdb;
+
+        $categories = $wpdb->get_col(
+            "SELECT DISTINCT meta_value
+             FROM {$wpdb->postmeta} pm
+             INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+             WHERE pm.meta_key = '_hsec_hh_event_category'
+             AND pm.meta_value <> ''
+             AND p.post_type = 'hs_event'
+             AND p.post_status = 'publish'
+             ORDER BY meta_value ASC"
+        );
+
+        return $categories ?: [];
     }
 }

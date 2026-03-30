@@ -232,6 +232,61 @@
 
 
 /* ============================================
+   Category Filter
+   ============================================ */
+
+.hsec-category-filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.hsec-category-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: inherit;
+    transition: all 0.2s ease;
+}
+
+.hsec-category-btn:hover {
+    border-color: #999;
+    background: #f5f5f5;
+}
+
+.hsec-category-btn.active {
+    border-color: #0073aa;
+    background: #0073aa;
+    color: #fff;
+}
+
+.hsec-category-btn .hsec-category-label {
+    font-weight: 500;
+}
+
+.hsec-category-select {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: inherit;
+    min-width: 180px;
+    cursor: pointer;
+    background: #fff;
+}
+
+.hsec-category-select:focus {
+    outline: none;
+    border-color: #0073aa;
+}
+
+
+/* ============================================
    Empty State
    ============================================ */
 
@@ -310,8 +365,17 @@
         font-size: 0.85em;
     }
 
+    .hsec-category-filter-buttons {
+        gap: 8px;
+    }
+
+    .hsec-category-btn {
+        padding: 6px 12px;
+    }
+
     .hsec-lang-select,
-    .hsec-date-select {
+    .hsec-date-select,
+    .hsec-category-select {
         width: 100%;
     }
 }
@@ -343,15 +407,18 @@
 /* Ensure widgets are visible in editor */
 .elementor-editor-active .hsec-lang-filter,
 .elementor-editor-active .hsec-date-filter,
-.elementor-editor-active .hsec-ondemand-toggle {
+.elementor-editor-active .hsec-ondemand-toggle,
+.elementor-editor-active .hsec-category-filter {
     min-height: 40px;
 }
 
 /* Interactive elements in editor - prevent actual filtering */
 .elementor-editor-active .hsec-lang-btn,
 .elementor-editor-active .hsec-month-btn,
+.elementor-editor-active .hsec-category-btn,
 .elementor-editor-active .hsec-lang-select,
 .elementor-editor-active .hsec-date-select,
+.elementor-editor-active .hsec-category-select,
 .elementor-editor-active .hsec-ondemand-checkbox {
     pointer-events: auto;
     cursor: pointer;

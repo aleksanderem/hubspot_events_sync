@@ -3,7 +3,7 @@
  * Plugin Name: HubSpot Events Connector
  * Plugin URI: https://mwt.pl
  * Description: Synchronizes marketing events from HubSpot to WordPress as a custom post type with automatic field mapping and incremental updates.
- * Version: 1.0.2
+ * Version: 1.1.0
  * Author: Alex M.
  * Author URI: https://mwt.pl
  * Text Domain: hubspot-events-connector
@@ -14,7 +14,7 @@
 
 defined('ABSPATH') || exit;
 
-define('HSEC_VERSION', '1.0.2');
+define('HSEC_VERSION', '1.1.0');
 define('HSEC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('HSEC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HSEC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -115,6 +115,7 @@ class HubSpot_Events_Connector {
         add_action('wp_ajax_hsec_delete_all_events', [$this, 'ajax_delete_all_events']);
         add_action('wp_ajax_hsec_take_screenshot', [$this, 'ajax_take_screenshot']);
         add_action('wp_ajax_hsec_fetch_missing_images', [$this, 'ajax_fetch_missing_images']);
+        add_action('wp_ajax_hsec_backfill_head_html', [$this, 'ajax_backfill_head_html']);
     }
 
     /**
@@ -419,6 +420,35 @@ class HubSpot_Events_Connector {
             'success' => $success,
             'failed' => $failed,
             'skipped' => $skipped,
+        ]);
+    }
+
+    /**
+     * AJAX: Backfill headHtml metadata for all events
+     */
+    public function ajax_backfill_head_html() {
+        check_ajax_referer('hsec_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Permission denied', 'hubspot-events-connector')]);
+        }
+
+        $post_type = HSEC_Post_Type::instance();
+        $stats = $post_type->backfill_head_html_meta();
+
+        $message = sprintf(
+            __('Backfill complete. Total: %d, Parsed: %d, No data-json: %d, Skipped: %d | Drafted: %d, Published: %d', 'hubspot-events-connector'),
+            $stats['total'],
+            $stats['parsed'],
+            $stats['empty'],
+            $stats['skipped'],
+            $stats['drafted'],
+            $stats['published']
+        );
+
+        wp_send_json_success([
+            'message' => $message,
+            'stats' => $stats,
         ]);
     }
 

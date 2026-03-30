@@ -389,6 +389,12 @@
                 e.preventDefault();
                 HSEC.fetchMissingImages($(this));
             });
+
+            // Backfill headHtml metadata button
+            $(document).on('click', '.hsec-backfill-head-html', function(e) {
+                e.preventDefault();
+                HSEC.backfillHeadHtml($(this));
+            });
         },
 
         /**
@@ -428,6 +434,57 @@
                             .removeClass('success')
                             .addClass('error')
                             .html('<strong>' + (hsecAdmin.strings.fetchImagesError || 'Error') + '</strong><br>' + (response.data.message || 'Unknown error'))
+                            .show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $progress.hide();
+                    $result
+                        .removeClass('success')
+                        .addClass('error')
+                        .html('<strong>Error</strong><br>' + error)
+                        .show();
+                },
+                complete: function() {
+                    $button.prop('disabled', false);
+                }
+            });
+        },
+
+        /**
+         * Backfill headHtml metadata for all events
+         */
+        backfillHeadHtml: function($button) {
+            var $progress = $('.hsec-sync-progress');
+            var $progressText = $('.hsec-progress-text');
+            var $result = $('.hsec-sync-result');
+
+            $button.prop('disabled', true);
+            $progress.show();
+            $progressText.text('Processing headHtml metadata...');
+            $result.hide();
+
+            $.ajax({
+                url: hsecAdmin.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'hsec_backfill_head_html',
+                    nonce: hsecAdmin.nonce
+                },
+                timeout: 300000,
+                success: function(response) {
+                    $progress.hide();
+                    if (response.success) {
+                        $result
+                            .removeClass('error')
+                            .addClass('success')
+                            .html('<strong>Backfill complete!</strong><br>' + response.data.message)
+                            .show();
+                    } else {
+                        $result
+                            .removeClass('success')
+                            .addClass('error')
+                            .html('<strong>Error</strong><br>' + (response.data.message || 'Unknown error'))
                             .show();
                     }
                 },

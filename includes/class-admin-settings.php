@@ -766,6 +766,11 @@ class HSEC_Admin_Settings {
                     <span class="dashicons dashicons-format-image"></span>
                     <?php _e('Fetch Missing Images', 'hubspot-events-connector'); ?>
                 </button>
+
+                <button type="button" class="button hsec-backfill-head-html">
+                    <span class="dashicons dashicons-database-import"></span>
+                    <?php _e('Backfill headHtml Meta', 'hubspot-events-connector'); ?>
+                </button>
             </div>
 
             <div class="hsec-sync-progress" style="display: none;">

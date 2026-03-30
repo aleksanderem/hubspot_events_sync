@@ -43,6 +43,10 @@ class HSEC_Post_Type {
         add_filter('manage_' . self::POST_TYPE . '_posts_columns', [$this, 'add_admin_columns']);
         add_action('manage_' . self::POST_TYPE . '_posts_custom_column', [$this, 'render_admin_columns'], 10, 2);
         add_filter('manage_edit-' . self::POST_TYPE . '_sortable_columns', [$this, 'sortable_columns']);
+
+        // Admin list filters
+        add_action('restrict_manage_posts', [$this, 'render_admin_filters']);
+        add_action('pre_get_posts', [$this, 'apply_admin_filters']);
     }
 
     /**
@@ -408,16 +412,19 @@ class HSEC_Post_Type {
      * Add custom columns to admin list
      */
     public function add_admin_columns($columns) {
-        $enabled_columns = get_option('hsec_admin_columns', ['thumbnail', 'event_type', 'event_date', 'language', 'event_status']);
+        $enabled_columns = get_option('hsec_admin_columns', ['thumbnail', 'event_category', 'event_type', 'event_date', 'language', 'event_status']);
 
         $available_columns = [
             'thumbnail' => __('Thumbnail', 'hubspot-events-connector'),
             'hs_featured_image' => __('HS Image', 'hubspot-events-connector'),
             'event_link' => __('Link', 'hubspot-events-connector'),
             'event_type' => __('Type', 'hubspot-events-connector'),
+            'event_category' => __('Category', 'hubspot-events-connector'),
             'event_date' => __('Event Date', 'hubspot-events-connector'),
             'event_status' => __('Status', 'hubspot-events-connector'),
             'language' => __('Language', 'hubspot-events-connector'),
+            'on_demand' => __('On Demand', 'hubspot-events-connector'),
+            'website_visible' => __('Visible', 'hubspot-events-connector'),
             'attendees' => __('Attendees', 'hubspot-events-connector'),
             'hubspot_id' => __('HubSpot ID', 'hubspot-events-connector'),
             'last_synced' => __('Last Synced', 'hubspot-events-connector'),
@@ -549,6 +556,45 @@ class HSEC_Post_Type {
                 }
                 break;
 
+            case 'event_category':
+                $cat = get_post_meta($post_id, self::META_PREFIX . 'hh_event_category', true);
+                if ($cat) {
+                    echo '<span class="hsec-badge">' . esc_html(ucfirst($cat)) . '</span>';
+                } else {
+                    $hh_raw = get_post_meta($post_id, self::META_PREFIX . 'hh_raw', true);
+                    if (empty($hh_raw)) {
+                        echo '<span style="color:#d63638;" title="' . esc_attr__('Brak data-json w headHtml tego landinga', 'hubspot-events-connector') . '">';
+                        echo '<span class="dashicons dashicons-warning" style="font-size:16px;width:16px;height:16px;vertical-align:middle;"></span> ';
+                        echo '<small>' . esc_html__('Brak meta', 'hubspot-events-connector') . '</small>';
+                        echo '</span>';
+                    } else {
+                        echo '&mdash;';
+                    }
+                }
+                break;
+
+            case 'on_demand':
+                $od = get_post_meta($post_id, self::META_PREFIX . 'hh_is_on_demand', true);
+                if ($od === '1') {
+                    echo '<span class="hsec-status hsec-status--past">' . __('On Demand', 'hubspot-events-connector') . '</span>';
+                } elseif ($od === '0') {
+                    echo '<span class="hsec-status hsec-status--upcoming">' . __('Live', 'hubspot-events-connector') . '</span>';
+                } else {
+                    echo '&mdash;';
+                }
+                break;
+
+            case 'website_visible':
+                $vis = get_post_meta($post_id, self::META_PREFIX . 'hh_website_visible', true);
+                if ($vis === '1') {
+                    echo '<span class="dashicons dashicons-visibility" title="' . esc_attr__('Visible', 'hubspot-events-connector') . '"></span>';
+                } elseif ($vis === '0') {
+                    echo '<span class="dashicons dashicons-hidden" title="' . esc_attr__('Hidden', 'hubspot-events-connector') . '"></span>';
+                } else {
+                    echo '&mdash;';
+                }
+                break;
+
             case 'hubspot_id':
                 $hubspot_id = get_post_meta($post_id, self::META_PREFIX . 'hubspot_id', true);
                 echo $hubspot_id ? '<code>' . esc_html($hubspot_id) . '</code>' : '&mdash;';
@@ -572,6 +618,151 @@ class HSEC_Post_Type {
         $columns['event_date'] = 'event_date';
         $columns['event_type'] = 'event_type';
         return $columns;
+    }
+
+    /**
+     * Render admin filter dropdowns for the event list table
+     */
+    public function render_admin_filters($post_type) {
+        if ($post_type !== self::POST_TYPE) {
+            return;
+        }
+
+        // Event Category filter (from headHtml data)
+        $categories = $this->get_distinct_meta_values(self::META_PREFIX . 'hh_event_category');
+        if (!empty($categories)) {
+            $current = sanitize_text_field($_GET['hsec_event_category'] ?? '');
+            echo '<select name="hsec_event_category">';
+            echo '<option value="">' . esc_html__('All Categories', 'hubspot-events-connector') . '</option>';
+            foreach ($categories as $cat) {
+                printf(
+                    '<option value="%s" %s>%s</option>',
+                    esc_attr($cat),
+                    selected($current, $cat, false),
+                    esc_html(ucfirst($cat))
+                );
+            }
+            echo '</select>';
+        }
+
+        // Language filter
+        $languages = $this->get_distinct_meta_values(self::META_PREFIX . 'language');
+        if (!empty($languages)) {
+            $lang_names = [
+                'pl' => 'Polski', 'en' => 'English', 'hu' => 'Magyar',
+                'cs' => 'Čeština', 'ro' => 'Română', 'sk' => 'Slovenčina',
+                'lt' => 'Lietuvių', 'lv' => 'Latviešu', 'et' => 'Eesti',
+                'de' => 'Deutsch', 'fr' => 'Français', 'es' => 'Español',
+                'it' => 'Italiano',
+            ];
+            $current = sanitize_text_field($_GET['hsec_language'] ?? '');
+            echo '<select name="hsec_language">';
+            echo '<option value="">' . esc_html__('All Languages', 'hubspot-events-connector') . '</option>';
+            foreach ($languages as $lang) {
+                if (empty($lang)) continue;
+                $label = $lang_names[$lang] ?? strtoupper($lang);
+                printf(
+                    '<option value="%s" %s>%s</option>',
+                    esc_attr($lang),
+                    selected($current, $lang, false),
+                    esc_html($label)
+                );
+            }
+            echo '</select>';
+        }
+
+        // On Demand filter
+        $current_od = sanitize_text_field($_GET['hsec_on_demand'] ?? '');
+        echo '<select name="hsec_on_demand">';
+        echo '<option value="">' . esc_html__('Live & On Demand', 'hubspot-events-connector') . '</option>';
+        printf('<option value="1" %s>%s</option>', selected($current_od, '1', false), esc_html__('On Demand', 'hubspot-events-connector'));
+        printf('<option value="0" %s>%s</option>', selected($current_od, '0', false), esc_html__('Live', 'hubspot-events-connector'));
+        echo '</select>';
+
+        // Website Visible filter
+        $current_vis = sanitize_text_field($_GET['hsec_website_visible'] ?? '');
+        echo '<select name="hsec_website_visible">';
+        echo '<option value="">' . esc_html__('All Visibility', 'hubspot-events-connector') . '</option>';
+        printf('<option value="1" %s>%s</option>', selected($current_vis, '1', false), esc_html__('Visible on Website', 'hubspot-events-connector'));
+        printf('<option value="0" %s>%s</option>', selected($current_vis, '0', false), esc_html__('Hidden', 'hubspot-events-connector'));
+        echo '</select>';
+    }
+
+    /**
+     * Apply admin filter selections to the query
+     */
+    public function apply_admin_filters($query) {
+        if (!is_admin() || !$query->is_main_query()) {
+            return;
+        }
+
+        if (($query->get('post_type') ?? '') !== self::POST_TYPE) {
+            return;
+        }
+
+        $meta_query = $query->get('meta_query') ?: [];
+
+        // Event Category
+        $category = sanitize_text_field($_GET['hsec_event_category'] ?? '');
+        if (!empty($category)) {
+            $meta_query[] = [
+                'key' => self::META_PREFIX . 'hh_event_category',
+                'value' => $category,
+            ];
+        }
+
+        // Language
+        $language = sanitize_text_field($_GET['hsec_language'] ?? '');
+        if (!empty($language)) {
+            $meta_query[] = [
+                'key' => self::META_PREFIX . 'language',
+                'value' => $language,
+            ];
+        }
+
+        // On Demand
+        $on_demand = $_GET['hsec_on_demand'] ?? '';
+        if ($on_demand !== '') {
+            $meta_query[] = [
+                'key' => self::META_PREFIX . 'hh_is_on_demand',
+                'value' => sanitize_text_field($on_demand),
+            ];
+        }
+
+        // Website Visible
+        $visible = $_GET['hsec_website_visible'] ?? '';
+        if ($visible !== '') {
+            $meta_query[] = [
+                'key' => self::META_PREFIX . 'hh_website_visible',
+                'value' => sanitize_text_field($visible),
+            ];
+        }
+
+        if (!empty($meta_query)) {
+            $meta_query['relation'] = 'AND';
+            $query->set('meta_query', $meta_query);
+        }
+    }
+
+    /**
+     * Get distinct values for a given meta key across all hs_event posts
+     */
+    private function get_distinct_meta_values($meta_key) {
+        global $wpdb;
+
+        $values = $wpdb->get_col($wpdb->prepare(
+            "SELECT DISTINCT pm.meta_value
+             FROM {$wpdb->postmeta} pm
+             INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+             WHERE pm.meta_key = %s
+               AND p.post_type = %s
+               AND pm.meta_value != ''
+             ORDER BY pm.meta_value ASC",
+            $meta_key,
+            self::POST_TYPE
+        ));
+
+        return $values ?: [];
     }
 
     /**
@@ -717,6 +908,16 @@ class HSEC_Post_Type {
 
         // Store raw HubSpot data for debugging and custom field mappings
         update_post_meta($post_id, self::META_PREFIX . 'raw_data', $page_data);
+
+        // Parse headHtml for embedded JSON metadata (data-json attribute)
+        $this->parse_and_save_head_html_meta($post_id, $page_data);
+
+        // Set post status based on whether headHtml meta was found
+        $hh_raw = get_post_meta($post_id, self::META_PREFIX . 'hh_raw', true);
+        $desired_status = !empty($hh_raw) ? 'publish' : 'draft';
+        if (get_post_status($post_id) !== $desired_status) {
+            wp_update_post(['ID' => $post_id, 'post_status' => $desired_status]);
+        }
 
         // Handle featured image from Landing Page featuredImage field
         $this->maybe_set_featured_image_from_landing_page($post_id, $page_data);
@@ -996,5 +1197,223 @@ class HSEC_Post_Type {
         }
 
         return $attachment_id;
+    }
+
+    /**
+     * Known fields that can appear in headHtml data-json
+     */
+    const HEAD_HTML_META_FIELDS = [
+        'event_category',
+        'event_date',
+        'is_on_demand',
+        'language',
+        'website_visible',
+    ];
+
+    /**
+     * Parse headHtml for embedded JSON metadata and save as post meta + taxonomies
+     *
+     * Looks for: <div class="generated-json-data" data-json="{...}"></div>
+     * in the headHtml field of landing page data.
+     */
+    public function parse_and_save_head_html_meta($post_id, $page_data) {
+        $head_html = $page_data['headHtml'] ?? '';
+
+        if (empty($head_html)) {
+            return;
+        }
+
+        $json_data = $this->extract_json_from_head_html($head_html);
+
+        if (empty($json_data)) {
+            return;
+        }
+
+        // Save each recognized field as post meta
+        foreach (self::HEAD_HTML_META_FIELDS as $field) {
+            if (!array_key_exists($field, $json_data)) {
+                continue;
+            }
+
+            $value = $json_data[$field];
+            $meta_key = self::META_PREFIX . 'hh_' . $field;
+
+            // Normalize booleans to "1"/"0" for consistent filtering
+            if (is_bool($value)) {
+                $value = $value ? '1' : '0';
+            }
+
+            update_post_meta($post_id, $meta_key, $value);
+        }
+
+        // Store the full extracted JSON for reference
+        update_post_meta($post_id, self::META_PREFIX . 'hh_raw', $json_data);
+
+        // Also store any extra/unknown fields from the JSON
+        $extra_fields = array_diff_key($json_data, array_flip(self::HEAD_HTML_META_FIELDS));
+        if (!empty($extra_fields)) {
+            foreach ($extra_fields as $key => $value) {
+                $meta_key = self::META_PREFIX . 'hh_' . sanitize_key($key);
+                if (is_bool($value)) {
+                    $value = $value ? '1' : '0';
+                }
+                update_post_meta($post_id, $meta_key, is_scalar($value) ? $value : wp_json_encode($value));
+            }
+        }
+
+        // Assign taxonomy terms from headHtml data
+        $this->assign_head_html_taxonomies($post_id, $json_data, $page_data);
+
+        // Override core meta fields where headHtml provides better data
+        $this->override_meta_from_head_html($post_id, $json_data);
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf(
+                '[HSEC] headHtml meta parsed for post %d: %s',
+                $post_id,
+                wp_json_encode($json_data)
+            ));
+        }
+    }
+
+    /**
+     * Extract JSON from headHtml data-json attribute
+     *
+     * Supports both HTML-entity-encoded and raw JSON in the attribute.
+     *
+     * @param string $head_html Raw headHtml content
+     * @return array|null Decoded JSON data or null
+     */
+    public function extract_json_from_head_html($head_html) {
+        // Match: <div class="generated-json-data" data-json="..."></div>
+        // The JSON inside data-json may have HTML-encoded quotes
+        if (!preg_match('/data-json=["\']([^"\']*)["\']/', $head_html, $matches)) {
+            return null;
+        }
+
+        $json_string = $matches[1];
+
+        // Decode HTML entities (HS encodes " as &quot; inside attributes)
+        $json_string = html_entity_decode($json_string, ENT_QUOTES, 'UTF-8');
+
+        $data = json_decode($json_string, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[HSEC] Failed to parse headHtml JSON: ' . json_last_error_msg() . ' | Raw: ' . $json_string);
+            }
+            return null;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Assign taxonomy terms based on headHtml JSON data
+     */
+    private function assign_head_html_taxonomies($post_id, $json_data, $page_data) {
+        $taxonomy_manager = HSEC_Taxonomy_Manager::instance();
+
+        // event_category → hs_event_type taxonomy
+        if (!empty($json_data['event_category'])) {
+            $taxonomy_manager->assign_term_to_event($post_id, 'hs_event_type', ucfirst($json_data['event_category']));
+        }
+
+        // language from headHtml overrides the landing page language if present
+        if (!empty($json_data['language'])) {
+            $lang_code = $json_data['language'];
+            $lang_names = [
+                'pl' => 'Polski', 'en' => 'English', 'hu' => 'Magyar',
+                'cs' => 'Čeština', 'ro' => 'Română', 'sk' => 'Slovenčina',
+                'lt' => 'Lietuvių', 'lv' => 'Latviešu', 'et' => 'Eesti',
+                'de' => 'Deutsch', 'fr' => 'Français', 'es' => 'Español',
+                'it' => 'Italiano',
+            ];
+            $lang_name = $lang_names[$lang_code] ?? strtoupper($lang_code);
+            $taxonomy_manager->assign_term_to_event($post_id, 'hs_event_language', $lang_name);
+        }
+
+        // is_on_demand → hs_event_type taxonomy (add "On Demand" term)
+        if (!empty($json_data['is_on_demand'])) {
+            $taxonomy_manager->assign_term_to_event($post_id, 'hs_event_type', 'On Demand');
+        }
+    }
+
+    /**
+     * Override core meta fields with more specific headHtml data
+     */
+    private function override_meta_from_head_html($post_id, $json_data) {
+        // event_date from headHtml is more reliable than _event_datetime extraction
+        if (!empty($json_data['event_date'])) {
+            $existing_start = get_post_meta($post_id, self::META_PREFIX . 'start_datetime', true);
+            // Only override if empty or if headHtml date is more specific
+            if (empty($existing_start)) {
+                update_post_meta($post_id, self::META_PREFIX . 'start_datetime', $json_data['event_date']);
+            }
+        }
+
+        // event_category can refine the event_type
+        if (!empty($json_data['event_category'])) {
+            update_post_meta($post_id, self::META_PREFIX . 'event_type', ucfirst($json_data['event_category']));
+        }
+
+        // language from headHtml overrides page-level language
+        if (!empty($json_data['language'])) {
+            update_post_meta($post_id, self::META_PREFIX . 'language', $json_data['language']);
+        }
+    }
+
+    /**
+     * Backfill headHtml metadata for all existing events
+     *
+     * Re-parses raw_data.headHtml for all events and saves extracted metadata.
+     *
+     * @return array Stats about the backfill operation
+     */
+    public function backfill_head_html_meta() {
+        $events = get_posts([
+            'post_type' => self::POST_TYPE,
+            'posts_per_page' => -1,
+            'post_status' => 'any',
+        ]);
+
+        $stats = ['total' => count($events), 'parsed' => 0, 'skipped' => 0, 'empty' => 0, 'drafted' => 0, 'published' => 0];
+
+        foreach ($events as $event) {
+            $raw_data = get_post_meta($event->ID, self::META_PREFIX . 'raw_data', true);
+
+            if (empty($raw_data) || !is_array($raw_data)) {
+                $stats['skipped']++;
+                // No raw data at all — draft it
+                if (get_post_status($event->ID) === 'publish') {
+                    wp_update_post(['ID' => $event->ID, 'post_status' => 'draft']);
+                    $stats['drafted']++;
+                }
+                continue;
+            }
+
+            $head_html = $raw_data['headHtml'] ?? '';
+
+            if (empty($head_html) || strpos($head_html, 'data-json') === false) {
+                $stats['empty']++;
+                // No data-json — draft it
+                if (get_post_status($event->ID) === 'publish') {
+                    wp_update_post(['ID' => $event->ID, 'post_status' => 'draft']);
+                    $stats['drafted']++;
+                }
+                continue;
+            }
+
+            $this->parse_and_save_head_html_meta($event->ID, $raw_data);
+            $stats['parsed']++;
+
+            // Has meta — ensure it's published
+            if (get_post_status($event->ID) !== 'publish') {
+                wp_update_post(['ID' => $event->ID, 'post_status' => 'publish']);
+                $stats['published']++;
+            }
+        }
+
+        return $stats;
     }
 }

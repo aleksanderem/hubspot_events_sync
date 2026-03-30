@@ -233,21 +233,17 @@ class HSEC_Elementor_Filters {
      */
     public function filter_elementor_query_args($query_args, $widget) {
         // Only apply to hs_event post type queries
-        $post_type = isset($query_args['post_type']) ? $query_args['post_type'] : '';
-
-        if ($post_type !== 'hs_event') {
+        $post_type = $query_args['post_type'] ?? '';
+        // Elementor may pass post_type as array
+        if (is_array($post_type)) {
+            if (!in_array('hs_event', $post_type)) {
+                return $query_args;
+            }
+        } elseif ($post_type !== 'hs_event') {
             return $query_args;
         }
 
-        $result = $this->apply_filters_to_args($query_args);
-
-        // Debug: log the actual returned query args
-        $debug_file = WP_CONTENT_DIR . '/hsec-debug.log';
-        $log = date('Y-m-d H:i:s') . " filter_elementor_query_args returning:\n";
-        $log .= "  post__not_in: " . (isset($result['post__not_in']) ? implode(', ', $result['post__not_in']) : 'NOT SET') . "\n";
-        file_put_contents($debug_file, $log, FILE_APPEND);
-
-        return $result;
+        return $this->apply_filters_to_args($query_args);
     }
 
     /**
@@ -257,29 +253,24 @@ class HSEC_Elementor_Filters {
      */
     public function filter_named_elementor_query($query) {
         $post_type = $query->get('post_type');
-        if ($post_type !== 'hs_event') {
+        if (is_array($post_type) ? !in_array('hs_event', $post_type) : $post_type !== 'hs_event') {
             return;
         }
 
+        $this->apply_query_filters($query);
+    }
+
+    /**
+     * Apply all filters to a WP_Query object
+     */
+    private function apply_query_filters($query) {
         $query_args = $this->apply_filters_to_args($query->query_vars);
 
-        if (!empty($query_args['meta_query'])) {
-            $query->set('meta_query', $query_args['meta_query']);
-        }
-        if (!empty($query_args['post__not_in'])) {
-            $query->set('post__not_in', $query_args['post__not_in']);
-        }
-        if (!empty($query_args['meta_key'])) {
-            $query->set('meta_key', $query_args['meta_key']);
-        }
-        if (!empty($query_args['orderby'])) {
-            $query->set('orderby', $query_args['orderby']);
-        }
-        if (!empty($query_args['order'])) {
-            $query->set('order', $query_args['order']);
-        }
-        if (!empty($query_args['tax_query'])) {
-            $query->set('tax_query', $query_args['tax_query']);
+        $keys = ['meta_query', 'meta_key', 'orderby', 'order', 'tax_query', 'post__not_in', 'post_status'];
+        foreach ($keys as $key) {
+            if (!empty($query_args[$key])) {
+                $query->set($key, $query_args[$key]);
+            }
         }
     }
 
@@ -295,24 +286,7 @@ class HSEC_Elementor_Filters {
             return;
         }
 
-        $meta_query = $query->get('meta_query') ?: [];
-        $modified_args = $this->apply_filters_to_args(['meta_query' => $meta_query]);
-
-        if (!empty($modified_args['meta_query'])) {
-            $query->set('meta_query', $modified_args['meta_query']);
-        }
-
-        if (!empty($modified_args['meta_key'])) {
-            $query->set('meta_key', $modified_args['meta_key']);
-        }
-
-        if (!empty($modified_args['orderby'])) {
-            $query->set('orderby', $modified_args['orderby']);
-        }
-
-        if (!empty($modified_args['order'])) {
-            $query->set('order', $modified_args['order']);
-        }
+        $this->apply_query_filters($query);
     }
 
     /**
@@ -503,11 +477,8 @@ class HSEC_Elementor_Filters {
             return $query_var;
         }
 
-        // Use default language if no filter specified
-        if ($key === self::QUERY_VAR_LANGUAGE) {
-            return $this->get_default_language();
-        }
-
+        // No default language — show all events when no filter is active.
+        // The language widget controls default via its own data-default-lang attribute.
         return '';
     }
 

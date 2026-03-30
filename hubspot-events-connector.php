@@ -3,7 +3,7 @@
  * Plugin Name: HubSpot Events Connector
  * Plugin URI: https://mwt.pl
  * Description: Synchronizes marketing events from HubSpot to WordPress as a custom post type with automatic field mapping and incremental updates.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: Alex M.
  * Author URI: https://mwt.pl
  * Text Domain: hubspot-events-connector
@@ -14,7 +14,7 @@
 
 defined('ABSPATH') || exit;
 
-define('HSEC_VERSION', '1.2.0');
+define('HSEC_VERSION', '1.2.1');
 define('HSEC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('HSEC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HSEC_PLUGIN_BASENAME', plugin_basename(__FILE__));

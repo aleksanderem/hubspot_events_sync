@@ -50,6 +50,9 @@ class HSEC_Elementor_Filters {
         // Hook into Elementor query args - this is the key hook!
         add_filter('elementor/query/query_args', [$this, 'filter_elementor_query_args'], 10, 2);
 
+        // Also hook the named query ID used on production Loop Grid
+        add_filter('elementor/query/hsec_filtered', [$this, 'filter_elementor_query_args'], 10, 2);
+
         // Also hook for main queries on hs_event archives
         add_action('pre_get_posts', [$this, 'modify_main_query']);
 

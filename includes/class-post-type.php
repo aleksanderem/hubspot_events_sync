@@ -837,11 +837,8 @@ class HSEC_Post_Type {
         // Check if event already exists
         $existing_post = $this->find_by_hubspot_id($hubspot_id);
 
-        // Extract title - prefer htmlTitle, fall back to name
-        $title = $page_data['htmlTitle'] ?? $page_data['name'] ?? __('Untitled Webinar', 'hubspot-events-connector');
-        // Clean up title (remove site name suffix if present)
-        $title = preg_replace('/\s*\|.*$/', '', $title);
-        $title = preg_replace('/\s*-\s*MWT.*$/i', '', $title);
+        // Extract title from internal name (more unique) with country/year prefix stripped
+        $title = $this->build_event_title($page_data);
 
         // Build description from available sources
         $description = '';
@@ -1367,6 +1364,51 @@ class HSEC_Post_Type {
      *
      * @return array Stats about the backfill operation
      */
+    /**
+     * Build a readable event title from HubSpot landing page data
+     *
+     * Prefers the internal `name` field (more unique) with the country/year
+     * prefix stripped. Falls back to `htmlTitle` cleaned of site-name suffixes.
+     *
+     * Prefix pattern: one or more letters (country/region) optionally followed
+     * by 2-4 digits (year), ending with underscore. Examples:
+     *   PL26_Codziennosc admina → Codziennosc admina
+     *   HU_KickoffWebinar      → KickoffWebinar
+     *   Bałtyki26_Kickoff      → Kickoff
+     *   OGÓLNE26_MAIAPLUS      → MAIAPLUS
+     */
+    private function build_event_title($page_data) {
+        $name = $page_data['name'] ?? '';
+        $html_title = $page_data['htmlTitle'] ?? '';
+
+        // Try internal name first — strip country/year prefix
+        if (!empty($name)) {
+            // Match: letters (incl. Polish chars) + optional 2-4 digits + underscore
+            $cleaned = preg_replace('/^[\p{L}]+\d{0,4}_/u', '', $name);
+
+            // Replace remaining underscores with spaces for readability
+            $cleaned = str_replace('_', ' ', $cleaned);
+            $cleaned = trim($cleaned);
+
+            if (!empty($cleaned)) {
+                return sanitize_text_field($cleaned);
+            }
+        }
+
+        // Fallback to htmlTitle with site-name suffix removed
+        if (!empty($html_title)) {
+            $html_title = preg_replace('/\s*\|.*$/', '', $html_title);
+            $html_title = preg_replace('/\s*-\s*MWT.*$/i', '', $html_title);
+            $html_title = trim($html_title);
+
+            if (!empty($html_title)) {
+                return sanitize_text_field($html_title);
+            }
+        }
+
+        return __('Untitled Webinar', 'hubspot-events-connector');
+    }
+
     public function backfill_head_html_meta() {
         $events = get_posts([
             'post_type' => self::POST_TYPE,

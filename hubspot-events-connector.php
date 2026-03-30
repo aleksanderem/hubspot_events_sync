@@ -3,7 +3,7 @@
  * Plugin Name: HubSpot Events Connector
  * Plugin URI: https://mwt.pl
  * Description: Synchronizes marketing events from HubSpot to WordPress as a custom post type with automatic field mapping and incremental updates.
- * Version: 1.1.1
+ * Version: 1.1.2
  * Author: Alex M.
  * Author URI: https://mwt.pl
  * Text Domain: hubspot-events-connector
@@ -14,7 +14,7 @@
 
 defined('ABSPATH') || exit;
 
-define('HSEC_VERSION', '1.1.1');
+define('HSEC_VERSION', '1.1.2');
 define('HSEC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('HSEC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HSEC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -36,8 +36,24 @@ if (file_exists(HSEC_PLUGIN_DIR . 'vendor/plugin-update-checker/plugin-update-ch
 
     // For private repositories - set authentication token
     // Token should be stored in wp-config.php: define('HSEC_GITHUB_TOKEN', 'your_token_here');
-    if (defined('HSEC_GITHUB_TOKEN') && HSEC_GITHUB_TOKEN) {
-        $hsec_update_checker->setAuthentication(HSEC_GITHUB_TOKEN);
+    // Skip authentication for public repos or when token is explicitly disabled
+    if (defined('HSEC_GITHUB_TOKEN') && HSEC_GITHUB_TOKEN && HSEC_GITHUB_TOKEN !== 'disabled') {
+        // Verify token works before using it (cached check)
+        $token_valid = get_transient('hsec_github_token_valid');
+        if ($token_valid === false) {
+            $test = wp_remote_get('https://api.github.com/repos/' . HSEC_GITHUB_REPO, [
+                'headers' => [
+                    'Authorization' => 'token ' . HSEC_GITHUB_TOKEN,
+                    'User-Agent' => 'WordPress/HSEC',
+                ],
+                'timeout' => 5,
+            ]);
+            $token_valid = (!is_wp_error($test) && wp_remote_retrieve_response_code($test) === 200) ? 'yes' : 'no';
+            set_transient('hsec_github_token_valid', $token_valid, DAY_IN_SECONDS);
+        }
+        if ($token_valid === 'yes') {
+            $hsec_update_checker->setAuthentication(HSEC_GITHUB_TOKEN);
+        }
     }
 
     // Use releases as the source of updates

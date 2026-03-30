@@ -51,7 +51,8 @@ class HSEC_Elementor_Filters {
         add_filter('elementor/query/query_args', [$this, 'filter_elementor_query_args'], 10, 2);
 
         // Also hook the named query ID used on production Loop Grid
-        add_filter('elementor/query/hsec_filtered', [$this, 'filter_elementor_query_args'], 10, 2);
+        // Note: elementor/query/{id} is a do_action that receives WP_Query, not apply_filters with array
+        add_action('elementor/query/hsec_filtered', [$this, 'filter_named_elementor_query']);
 
         // Also hook for main queries on hs_event archives
         add_action('pre_get_posts', [$this, 'modify_main_query']);
@@ -247,6 +248,36 @@ class HSEC_Elementor_Filters {
         file_put_contents($debug_file, $log, FILE_APPEND);
 
         return $result;
+    }
+
+    /**
+     * Filter named Elementor query (do_action hook receives WP_Query object)
+     *
+     * @param \WP_Query $query
+     */
+    public function filter_named_elementor_query($query) {
+        $post_type = $query->get('post_type');
+        if ($post_type !== 'hs_event') {
+            return;
+        }
+
+        $query_args = $this->apply_filters_to_args($query->query_vars);
+
+        if (!empty($query_args['meta_query'])) {
+            $query->set('meta_query', $query_args['meta_query']);
+        }
+        if (!empty($query_args['post__not_in'])) {
+            $query->set('post__not_in', $query_args['post__not_in']);
+        }
+        if (!empty($query_args['meta_key'])) {
+            $query->set('meta_key', $query_args['meta_key']);
+        }
+        if (!empty($query_args['orderby'])) {
+            $query->set('orderby', $query_args['orderby']);
+        }
+        if (!empty($query_args['order'])) {
+            $query->set('order', $query_args['order']);
+        }
     }
 
     /**

@@ -933,9 +933,10 @@ class HSEC_Post_Type {
         // Parse headHtml for embedded JSON metadata (data-json attribute)
         $this->parse_and_save_head_html_meta($post_id, $page_data);
 
-        // Set post status based on whether headHtml meta was found
+        // Set post status based on headHtml meta and website_visible flag
         $hh_raw = get_post_meta($post_id, self::META_PREFIX . 'hh_raw', true);
-        $desired_status = !empty($hh_raw) ? 'publish' : 'draft';
+        $website_visible = get_post_meta($post_id, self::META_PREFIX . 'hh_website_visible', true);
+        $desired_status = (!empty($hh_raw) && $website_visible !== '0') ? 'publish' : 'draft';
         if (get_post_status($post_id) !== $desired_status) {
             wp_update_post(['ID' => $post_id, 'post_status' => $desired_status]);
         }
@@ -1443,14 +1444,13 @@ class HSEC_Post_Type {
             'post_status' => 'any',
         ]);
 
-        $stats = ['total' => count($events), 'parsed' => 0, 'skipped' => 0, 'empty' => 0, 'drafted' => 0, 'published' => 0];
+        $stats = ['total' => count($events), 'parsed' => 0, 'skipped' => 0, 'empty' => 0, 'drafted' => 0, 'published' => 0, 'titles_updated' => 0];
 
         foreach ($events as $event) {
             $raw_data = get_post_meta($event->ID, self::META_PREFIX . 'raw_data', true);
 
             if (empty($raw_data) || !is_array($raw_data)) {
                 $stats['skipped']++;
-                // No raw data at all — draft it
                 if (get_post_status($event->ID) === 'publish') {
                     wp_update_post(['ID' => $event->ID, 'post_status' => 'draft']);
                     $stats['drafted']++;
@@ -1458,11 +1458,17 @@ class HSEC_Post_Type {
                 continue;
             }
 
+            // Always re-build title from raw_data name field
+            $new_title = $this->build_event_title($raw_data);
+            if ($new_title !== $event->post_title) {
+                wp_update_post(['ID' => $event->ID, 'post_title' => $new_title]);
+                $stats['titles_updated']++;
+            }
+
             $head_html = $raw_data['headHtml'] ?? '';
 
             if (empty($head_html) || strpos($head_html, 'data-json') === false) {
                 $stats['empty']++;
-                // No data-json — draft it
                 if (get_post_status($event->ID) === 'publish') {
                     wp_update_post(['ID' => $event->ID, 'post_status' => 'draft']);
                     $stats['drafted']++;
@@ -1473,8 +1479,14 @@ class HSEC_Post_Type {
             $this->parse_and_save_head_html_meta($event->ID, $raw_data);
             $stats['parsed']++;
 
-            // Has meta — ensure it's published
-            if (get_post_status($event->ID) !== 'publish') {
+            // website_visible=false → draft, otherwise publish
+            $website_visible = get_post_meta($event->ID, self::META_PREFIX . 'hh_website_visible', true);
+            if ($website_visible === '0') {
+                if (get_post_status($event->ID) !== 'draft') {
+                    wp_update_post(['ID' => $event->ID, 'post_status' => 'draft']);
+                    $stats['drafted']++;
+                }
+            } elseif (get_post_status($event->ID) !== 'publish') {
                 wp_update_post(['ID' => $event->ID, 'post_status' => 'publish']);
                 $stats['published']++;
             }

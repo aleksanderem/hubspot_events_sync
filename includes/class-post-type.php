@@ -412,7 +412,17 @@ class HSEC_Post_Type {
      * Add custom columns to admin list
      */
     public function add_admin_columns($columns) {
-        $enabled_columns = get_option('hsec_admin_columns', ['thumbnail', 'event_category', 'event_type', 'event_date', 'language', 'event_status']);
+        $enabled_columns = get_option('hsec_admin_columns', [
+            'thumbnail', 'event_category', 'event_type', 'event_date',
+            'language', 'on_demand', 'website_visible', 'event_status',
+        ]);
+        // Ensure headHtml columns are always present regardless of saved option
+        $required = ['event_category', 'on_demand', 'website_visible'];
+        foreach ($required as $col) {
+            if (!in_array($col, $enabled_columns)) {
+                $enabled_columns[] = $col;
+            }
+        }
 
         $available_columns = [
             'thumbnail' => __('Thumbnail', 'hubspot-events-connector'),

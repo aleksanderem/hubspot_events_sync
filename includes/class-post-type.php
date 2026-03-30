@@ -869,11 +869,8 @@ class HSEC_Post_Type {
             return $post_id;
         }
 
-        // Determine event type based on filter keyword or default
-        $event_type = 'Webinar';
-        if (!empty($page_data['subcategory'])) {
-            $event_type = $page_data['subcategory'];
-        }
+        // Determine event type — subcategory from HS is page type (e.g. "landing_page"), not event type
+        $event_type = get_option('hsec_filter_keyword', 'Webinar') ?: 'Webinar';
 
         // Build meta mappings for Landing Page
         $meta_mappings = [

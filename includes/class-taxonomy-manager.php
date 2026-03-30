@@ -99,7 +99,7 @@ class HSEC_Taxonomy_Manager {
             'hierarchical'      => $config['hierarchical'] ?? false,
             'labels'            => $labels,
             'show_ui'           => true,
-            'show_admin_column' => true,
+            'show_admin_column' => false,
             'query_var'         => true,
             'rewrite'           => ['slug' => $config['slug']],
             'show_in_rest'      => true,

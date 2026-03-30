@@ -730,21 +730,38 @@ class HSEC_Post_Type {
             ];
         }
 
-        // On Demand
+        // On Demand — include events without the field when filtering for "Live" (0)
         $on_demand = $_GET['hsec_on_demand'] ?? '';
-        if ($on_demand !== '') {
+        if ($on_demand === '1') {
             $meta_query[] = [
                 'key' => self::META_PREFIX . 'hh_is_on_demand',
-                'value' => sanitize_text_field($on_demand),
+                'value' => '1',
+            ];
+        } elseif ($on_demand === '0') {
+            $meta_query[] = [
+                'relation' => 'OR',
+                [
+                    'key' => self::META_PREFIX . 'hh_is_on_demand',
+                    'value' => '0',
+                ],
+                [
+                    'key' => self::META_PREFIX . 'hh_is_on_demand',
+                    'compare' => 'NOT EXISTS',
+                ],
             ];
         }
 
-        // Website Visible
+        // Website Visible — include events without the field when filtering for "Visible" (1)
         $visible = $_GET['hsec_website_visible'] ?? '';
-        if ($visible !== '') {
+        if ($visible === '1') {
             $meta_query[] = [
                 'key' => self::META_PREFIX . 'hh_website_visible',
-                'value' => sanitize_text_field($visible),
+                'value' => '1',
+            ];
+        } elseif ($visible === '0') {
+            $meta_query[] = [
+                'key' => self::META_PREFIX . 'hh_website_visible',
+                'value' => '0',
             ];
         }
 

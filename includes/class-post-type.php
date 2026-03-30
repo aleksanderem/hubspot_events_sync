@@ -567,9 +567,9 @@ class HSEC_Post_Type {
                 break;
 
             case 'event_category':
-                $cat = get_post_meta($post_id, self::META_PREFIX . 'hh_event_category', true);
-                if ($cat) {
-                    echo '<span class="hsec-badge">' . esc_html(ucfirst($cat)) . '</span>';
+                $terms = wp_get_object_terms($post_id, 'hs_event_category', ['fields' => 'names']);
+                if (!is_wp_error($terms) && !empty($terms)) {
+                    echo '<span class="hsec-badge">' . esc_html(implode(', ', $terms)) . '</span>';
                 } else {
                     $hh_raw = get_post_meta($post_id, self::META_PREFIX . 'hh_raw', true);
                     if (empty($hh_raw)) {
@@ -638,8 +638,9 @@ class HSEC_Post_Type {
             return;
         }
 
-        // Event Category filter (from headHtml data)
-        $categories = $this->get_distinct_meta_values(self::META_PREFIX . 'hh_event_category');
+        // Event Category filter (from taxonomy)
+        $cat_terms = get_terms(['taxonomy' => 'hs_event_category', 'hide_empty' => false, 'fields' => 'names', 'orderby' => 'name']);
+        $categories = (!is_wp_error($cat_terms) && !empty($cat_terms)) ? $cat_terms : [];
         if (!empty($categories)) {
             $current = sanitize_text_field($_GET['hsec_event_category'] ?? '');
             echo '<select name="hsec_event_category">';
@@ -712,13 +713,16 @@ class HSEC_Post_Type {
 
         $meta_query = $query->get('meta_query') ?: [];
 
-        // Event Category
+        // Event Category — taxonomy query
         $category = sanitize_text_field($_GET['hsec_event_category'] ?? '');
         if (!empty($category)) {
-            $meta_query[] = [
-                'key' => self::META_PREFIX . 'hh_event_category',
-                'value' => $category,
+            $tax_query = $query->get('tax_query') ?: [];
+            $tax_query[] = [
+                'taxonomy' => 'hs_event_category',
+                'field' => 'name',
+                'terms' => $category,
             ];
+            $query->set('tax_query', $tax_query);
         }
 
         // Language
@@ -1373,13 +1377,14 @@ class HSEC_Post_Type {
      * Override core meta fields with more specific headHtml data
      */
     private function override_meta_from_head_html($post_id, $json_data) {
-        // event_date from headHtml is more reliable than _event_datetime extraction
+        // event_date from headHtml — always override, normalize to Y-m-d H:i:s for DATETIME queries
         if (!empty($json_data['event_date'])) {
-            $existing_start = get_post_meta($post_id, self::META_PREFIX . 'start_datetime', true);
-            // Only override if empty or if headHtml date is more specific
-            if (empty($existing_start)) {
-                update_post_meta($post_id, self::META_PREFIX . 'start_datetime', $json_data['event_date']);
+            $date_str = $json_data['event_date'];
+            // Normalize: "2026-02-26" → "2026-02-26 00:00:00"
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_str)) {
+                $date_str .= ' 00:00:00';
             }
+            update_post_meta($post_id, self::META_PREFIX . 'start_datetime', $date_str);
         }
 
         // event_category can refine the event_type

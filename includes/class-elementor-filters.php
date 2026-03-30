@@ -278,6 +278,9 @@ class HSEC_Elementor_Filters {
         if (!empty($query_args['order'])) {
             $query->set('order', $query_args['order']);
         }
+        if (!empty($query_args['tax_query'])) {
+            $query->set('tax_query', $query_args['tax_query']);
+        }
     }
 
     /**
@@ -334,13 +337,14 @@ class HSEC_Elementor_Filters {
             ];
         }
 
-        // Category filter
+        // Category filter — uses taxonomy, not meta
         $category = $this->get_filter_value(self::QUERY_VAR_CATEGORY);
         if ($category && $category !== 'all') {
-            $meta_query[] = [
-                'key' => '_hsec_hh_event_category',
-                'value' => sanitize_text_field($category),
-                'compare' => '=',
+            $query_args['tax_query'] = $query_args['tax_query'] ?? [];
+            $query_args['tax_query'][] = [
+                'taxonomy' => 'hs_event_category',
+                'field' => 'name',
+                'terms' => sanitize_text_field($category),
             ];
         }
 
@@ -866,19 +870,14 @@ class HSEC_Elementor_Filters {
      * Get available event categories from headHtml meta
      */
     public static function get_available_categories() {
-        global $wpdb;
+        $terms = get_terms([
+            'taxonomy' => 'hs_event_category',
+            'hide_empty' => true,
+            'fields' => 'names',
+            'orderby' => 'name',
+            'order' => 'ASC',
+        ]);
 
-        $categories = $wpdb->get_col(
-            "SELECT DISTINCT meta_value
-             FROM {$wpdb->postmeta} pm
-             INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
-             WHERE pm.meta_key = '_hsec_hh_event_category'
-             AND pm.meta_value <> ''
-             AND p.post_type = 'hs_event'
-             AND p.post_status = 'publish'
-             ORDER BY meta_value ASC"
-        );
-
-        return $categories ?: [];
+        return (!is_wp_error($terms) && !empty($terms)) ? $terms : [];
     }
 }

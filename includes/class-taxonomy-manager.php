@@ -35,6 +35,24 @@ class HSEC_Taxonomy_Manager {
             'slug' => 'hs-event-language',
             'hierarchical' => false,
         ],
+        'hs_event_category' => [
+            'singular' => 'Event Category',
+            'plural' => 'Event Categories',
+            'slug' => 'hs-event-category',
+            'hierarchical' => true,
+        ],
+        'hs_event_ondemand' => [
+            'singular' => 'On Demand',
+            'plural' => 'On Demand',
+            'slug' => 'hs-event-ondemand',
+            'hierarchical' => false,
+        ],
+        'hs_event_visibility' => [
+            'singular' => 'Visibility',
+            'plural' => 'Visibility',
+            'slug' => 'hs-event-visibility',
+            'hierarchical' => false,
+        ],
     ];
 
     /**

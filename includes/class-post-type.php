@@ -1336,9 +1336,12 @@ class HSEC_Post_Type {
     private function assign_head_html_taxonomies($post_id, $json_data, $page_data) {
         $taxonomy_manager = HSEC_Taxonomy_Manager::instance();
 
-        // event_category → hs_event_type taxonomy
+        // event_category → hs_event_category taxonomy
         if (!empty($json_data['event_category'])) {
-            $taxonomy_manager->assign_term_to_event($post_id, 'hs_event_type', ucfirst($json_data['event_category']));
+            $cat_label = ucfirst($json_data['event_category']);
+            $taxonomy_manager->assign_term_to_event($post_id, 'hs_event_category', $cat_label);
+            // Also keep in hs_event_type for backwards compat
+            $taxonomy_manager->assign_term_to_event($post_id, 'hs_event_type', $cat_label);
         }
 
         // language from headHtml overrides the landing page language if present
@@ -1355,9 +1358,14 @@ class HSEC_Post_Type {
             $taxonomy_manager->assign_term_to_event($post_id, 'hs_event_language', $lang_name);
         }
 
-        // is_on_demand → hs_event_type taxonomy (add "On Demand" term)
-        if (!empty($json_data['is_on_demand'])) {
-            $taxonomy_manager->assign_term_to_event($post_id, 'hs_event_type', 'On Demand');
+        // is_on_demand → hs_event_ondemand taxonomy
+        $on_demand_label = !empty($json_data['is_on_demand']) ? 'On Demand' : 'Live';
+        $taxonomy_manager->assign_term_to_event($post_id, 'hs_event_ondemand', $on_demand_label);
+
+        // website_visible → hs_event_visibility taxonomy
+        if (array_key_exists('website_visible', $json_data)) {
+            $vis_label = !empty($json_data['website_visible']) ? 'Visible' : 'Hidden';
+            $taxonomy_manager->assign_term_to_event($post_id, 'hs_event_visibility', $vis_label);
         }
     }
 

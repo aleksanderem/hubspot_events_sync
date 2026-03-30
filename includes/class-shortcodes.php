@@ -568,8 +568,44 @@ class HSEC_Meta_Shortcode {
             return esc_html($atts['fallback']);
         }
 
-        // Get the requested key (supports dot notation for nested keys)
-        $value = $this->get_nested_value($raw_data, $atts['key']);
+        // Resolve the value — check multiple sources in priority order:
+        // 1. Post meta: _hsec_{key} (direct meta fields)
+        // 2. HeadHtml meta: _hsec_hh_{key} (parsed from data-json)
+        // 3. Raw HubSpot data: raw_data[key] (with dot notation support)
+        $key = $atts['key'];
+        $value = null;
+
+        // Shorthand aliases
+        $aliases = [
+            'url'        => 'event_url',
+            'date'       => 'start_datetime',
+            'type'       => 'event_type',
+            'organizer'  => 'event_organizer',
+            'language'   => 'language',
+            'category'   => 'hh_event_category',
+            'on_demand'  => 'hh_is_on_demand',
+            'visible'    => 'hh_website_visible',
+        ];
+        $meta_key = $aliases[$key] ?? $key;
+
+        // 1. Direct post meta
+        $meta_val = get_post_meta($post_id, '_hsec_' . $meta_key, true);
+        if ($meta_val !== '' && $meta_val !== false) {
+            $value = $meta_val;
+        }
+
+        // 2. HeadHtml meta (if not already found and key doesn't start with hh_)
+        if ($value === null && strpos($meta_key, 'hh_') !== 0) {
+            $hh_val = get_post_meta($post_id, '_hsec_hh_' . $meta_key, true);
+            if ($hh_val !== '' && $hh_val !== false) {
+                $value = $hh_val;
+            }
+        }
+
+        // 3. Raw HubSpot data (dot notation)
+        if ($value === null && !empty($raw_data)) {
+            $value = $this->get_nested_value($raw_data, $key);
+        }
 
         if ($value === null || $value === '') {
             return esc_html($atts['fallback']);

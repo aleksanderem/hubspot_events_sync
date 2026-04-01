@@ -139,11 +139,13 @@ class HSEC_Elementor_Filters {
         require_once HSEC_PLUGIN_DIR . 'includes/hsec-elementor-filters/widget-date-filter.php';
         require_once HSEC_PLUGIN_DIR . 'includes/hsec-elementor-filters/widget-ondemand-toggle.php';
         require_once HSEC_PLUGIN_DIR . 'includes/hsec-elementor-filters/widget-category-filter.php';
+        require_once HSEC_PLUGIN_DIR . 'includes/hsec-elementor-filters/widget-clear-filters.php';
 
         $widgets_manager->register(new HSEC_Language_Filter_Widget());
         $widgets_manager->register(new HSEC_Date_Filter_Widget());
         $widgets_manager->register(new HSEC_OnDemand_Toggle_Widget());
         $widgets_manager->register(new HSEC_Category_Filter_Widget());
+        $widgets_manager->register(new HSEC_Clear_Filters_Widget());
     }
 
     /**

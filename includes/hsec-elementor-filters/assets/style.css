@@ -287,6 +287,39 @@
 
 
 /* ============================================
+   Clear Filters Button
+   ============================================ */
+
+.hsec-clear-filters {
+    display: none;
+    align-items: center;
+    gap: 0.4em;
+    padding: 8px 16px;
+    border: 1px solid #d63638;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    color: #d63638;
+    transition: all 0.2s ease;
+}
+
+.hsec-clear-filters.hsec-clear-visible {
+    display: inline-flex;
+}
+
+.hsec-clear-filters:hover {
+    background: #d63638;
+    color: #fff;
+}
+
+.hsec-clear-filters .hsec-clear-icon {
+    font-size: 1.1em;
+    line-height: 1;
+}
+
+
+/* ============================================
    Empty State
    ============================================ */
 

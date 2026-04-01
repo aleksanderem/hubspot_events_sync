@@ -247,7 +247,7 @@ class HSEC_API_Client {
             foreach ($pages as $page_data) {
                 $include = true;
 
-                // Filter by keyword in URL, name or title
+                // Filter by keywords in URL, name or title (comma-separated list)
                 if ($filter_keyword) {
                     $searchable = strtolower(
                         ($page_data['url'] ?? '') . ' ' .
@@ -255,7 +255,14 @@ class HSEC_API_Client {
                         ($page_data['htmlTitle'] ?? '') . ' ' .
                         ($page_data['slug'] ?? '')
                     );
-                    $include = strpos($searchable, strtolower($filter_keyword)) !== false;
+                    $keywords = array_filter(array_map('trim', explode(',', strtolower($filter_keyword))));
+                    $include = false;
+                    foreach ($keywords as $kw) {
+                        if (strpos($searchable, $kw) !== false) {
+                            $include = true;
+                            break;
+                        }
+                    }
                 }
 
                 // Filter by language

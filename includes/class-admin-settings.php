@@ -537,10 +537,10 @@ class HSEC_Admin_Settings {
                name="hsec_filter_keyword"
                id="hsec_filter_keyword"
                value="<?php echo esc_attr($keyword); ?>"
-               class="regular-text"
-               placeholder="webinar">
+               class="large-text"
+               placeholder="webinar, conference, workshop">
         <p class="description">
-            <?php _e('Only import landing pages containing this keyword in URL, name or title. Leave empty to import all. Works only with Landing Pages source.', 'hubspot-events-connector'); ?>
+            <?php _e('Only import landing pages containing these keywords in URL, name or title. Comma-separated list (e.g. "webinar, conference, workshop"). Leave empty to import all. Works only with Landing Pages source.', 'hubspot-events-connector'); ?>
         </p>
         <?php
     }

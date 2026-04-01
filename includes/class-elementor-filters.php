@@ -243,7 +243,18 @@ class HSEC_Elementor_Filters {
             return $query_args;
         }
 
-        return $this->apply_filters_to_args($query_args);
+        $result = $this->apply_filters_to_args($query_args);
+
+        error_log('[HSEC] filter_elementor_query_args FIRED. Filters: ' . wp_json_encode([
+            'lang' => $_GET[self::QUERY_VAR_LANGUAGE] ?? $_POST[self::QUERY_VAR_LANGUAGE] ?? 'NONE',
+            'cat' => $_GET[self::QUERY_VAR_CATEGORY] ?? $_POST[self::QUERY_VAR_CATEGORY] ?? 'NONE',
+            'date' => $_GET[self::QUERY_VAR_DATE_FILTER] ?? $_POST[self::QUERY_VAR_DATE_FILTER] ?? 'NONE',
+            'od' => $_GET[self::QUERY_VAR_ONDEMAND] ?? $_POST[self::QUERY_VAR_ONDEMAND] ?? 'NONE',
+            'meta_query_count' => count($result['meta_query'] ?? []),
+            'tax_query_count' => count($result['tax_query'] ?? []),
+        ]));
+
+        return $result;
     }
 
     /**

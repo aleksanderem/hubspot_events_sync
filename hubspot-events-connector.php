@@ -3,7 +3,7 @@
  * Plugin Name: HubSpot Events Connector
  * Plugin URI: https://mwt.pl
  * Description: Synchronizes marketing events from HubSpot to WordPress as a custom post type with automatic field mapping and incremental updates.
- * Version: 1.3.1
+ * Version: 1.3.2
  * Author: Alex M.
  * Author URI: https://mwt.pl
  * Text Domain: hubspot-events-connector
@@ -14,7 +14,7 @@
 
 defined('ABSPATH') || exit;
 
-define('HSEC_VERSION', '1.3.1');
+define('HSEC_VERSION', '1.3.2');
 define('HSEC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('HSEC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HSEC_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -109,9 +109,17 @@ class HubSpot_Events_Connector {
         HSEC_Event_Date_Shortcode::instance();
         HSEC_Meta_Shortcode::instance();
 
-        // Elementor integration
-        if (did_action('elementor/loaded')) {
+        // Elementor integration — hook late to ensure Elementor is loaded
+        if (did_action('elementor/loaded') || class_exists('\Elementor\Plugin') || defined('ELEMENTOR_VERSION')) {
             HSEC_Elementor_Filters::instance();
+        } else {
+            // If Elementor hasn't loaded yet, wait for it
+            add_action('elementor/loaded', function() {
+                if (!class_exists('HSEC_Elementor_Filters')) {
+                    require_once HSEC_PLUGIN_DIR . 'includes/class-elementor-filters.php';
+                }
+                HSEC_Elementor_Filters::instance();
+            });
         }
 
         // Admin only components
@@ -150,8 +158,8 @@ class HubSpot_Events_Connector {
         require_once HSEC_PLUGIN_DIR . 'includes/class-shortcodes.php';
         require_once HSEC_PLUGIN_DIR . 'includes/class-custom-slug.php';
 
-        // Elementor integration (only if Elementor is active)
-        if (did_action('elementor/loaded')) {
+        // Elementor integration — always load the file, class checks Elementor at runtime
+        if (did_action('elementor/loaded') || class_exists('\Elementor\Plugin') || defined('ELEMENTOR_VERSION')) {
             require_once HSEC_PLUGIN_DIR . 'includes/class-elementor-filters.php';
         }
     }

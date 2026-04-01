@@ -154,14 +154,14 @@ class HSEC_Elementor_Filters {
             'hsec-elementor-filters',
             $this->get_assets_url() . 'style.css',
             [],
-            '2.0.0'
+            HSEC_VERSION
         );
 
         wp_enqueue_script(
             'hsec-elementor-filters',
             $this->get_assets_url() . 'script.js',
             ['jquery'],
-            '2.0.0',
+            HSEC_VERSION,
             true
         );
 
@@ -224,7 +224,7 @@ class HSEC_Elementor_Filters {
             'hsec-elementor-filters-editor',
             $this->get_assets_url() . 'style.css',
             [],
-            '2.0.0'
+            HSEC_VERSION
         );
     }
 

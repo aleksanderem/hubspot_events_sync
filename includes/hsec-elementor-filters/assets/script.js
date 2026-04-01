@@ -197,21 +197,43 @@
         },
 
         applyFilters: function() {
-            // Update URL
-            this.updateUrl();
+            // Build URL with filter params and navigate — server-side filtering
+            // handles the query via elementor/query/query_args hook
+            var url = new URL(window.location.href);
+            var params = url.searchParams;
 
-            // Use AJAX if we have all required info
-            if (this.loopGrid && this.loopGrid.$container && this.loopGrid.postId && this.loopGrid.widgetId && this.config.ajaxUrl) {
-                console.log('HSEC Filters: Using AJAX', this.loopGrid);
-                this.ajaxFilter();
+            if (this.currentFilters.language) {
+                params.set(this.queryVars.language, this.currentFilters.language);
             } else {
-                console.log('HSEC Filters: Falling back to reload', {
-                    loopGrid: this.loopGrid,
-                    ajaxUrl: this.config.ajaxUrl
-                });
-                // Fallback to page reload
-                window.location.reload();
+                params.delete(this.queryVars.language);
             }
+            if (this.currentFilters.dateFilter) {
+                params.set(this.queryVars.dateFilter, this.currentFilters.dateFilter);
+            } else {
+                params.delete(this.queryVars.dateFilter);
+            }
+            if (this.currentFilters.dateMonth) {
+                params.set(this.queryVars.dateMonth, this.currentFilters.dateMonth);
+            } else {
+                params.delete(this.queryVars.dateMonth);
+            }
+            if (this.currentFilters.ondemand) {
+                params.set(this.queryVars.ondemand, this.currentFilters.ondemand);
+            } else {
+                params.delete(this.queryVars.ondemand);
+            }
+            if (this.currentFilters.category) {
+                params.set(this.queryVars.category, this.currentFilters.category);
+            } else {
+                params.delete(this.queryVars.category);
+            }
+
+            // Reset pagination
+            params.delete('paged');
+            params.delete('page');
+
+            var newUrl = url.pathname + (params.toString() ? '?' + params.toString() : '');
+            window.location.href = newUrl;
         },
 
         updateUrl: function() {
